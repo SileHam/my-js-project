@@ -112,20 +112,7 @@ ecommerce-js/
 - Les données sont persistantes entre les sessions
 - Pour réinitialiser les données, vider le localStorage
 
-## 📄 Documentation
-
-- **RAPPORT_PROJET.md** : Rapport complet du projet (8-12 pages)
-- **PRESENTATION.md** : Présentation PowerPoint (10-12 slides)
-
 ## 👨‍💻 Auteur
 
-[Votre Nom]
-
-## 📅 Date
-
-Décembre 2024
-
+[Hamza]
 ---
-
-**Projet développé dans le cadre d'un cours de développement web JavaScript**
-
