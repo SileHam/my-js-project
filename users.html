@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Utilisateurs - E-shop</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body>
+  <div class="app">
+    <header class="nav">
+      <div class="nav-left"><h2 class="logo">E-Shop</h2></div>
+      <div class="nav-right">
+        <span id="username"></span>
+        <select id="langSelectTop">
+          <option value="fr">FR</option>
+          <option value="en">EN</option>
+          <option value="ar">AR</option>
+        </select>
+        <button id="themeToggle" class="btn">Dark Mode</button>
+        <button id="logoutBtn" class="btn" data-i18n="btn_logout">Déconnexion</button>
+      </div>
+    </header>
+
+    <div class="layout">
+      <aside class="sidebar">
+        <nav>
+          <a href="dashboard.html" data-i18n="nav_dashboard">Tableau de bord</a>
+          <a href="products.html" data-i18n="nav_products">Produits</a>
+          <a href="categories.html" data-i18n="nav_categories">Catégories</a>
+          <a href="orders.html" data-i18n="nav_orders">Commandes</a>
+          <a href="users.html" class="active" data-i18n="nav_users">Utilisateurs</a>
+          <a href="reviews.html" data-i18n="nav_reviews">Avis</a>
+        </nav>
+      </aside>
+
+      <main class="main">
+        <div class="card">
+          <div class="row between">
+            <h2 data-i18n="title_users">Utilisateurs</h2>
+            <div>
+              <button id="btnAdd" class="btn primary" data-i18n="add_user">Ajouter utilisateur</button>
+              <button id="exportCsv" class="btn" data-i18n="btn_export_csv">Export CSV</button>
+            </div>
+          </div>
+
+          <div class="filters">
+            <input id="search" data-i18n-placeholder="label_search" placeholder="Recherche..." />
+            <select id="filterRole">
+              <option value="" data-i18n="label_all_roles">Tous les rôles</option>
+              <option value="admin" data-i18n="role_admin">Admin</option>
+              <option value="user" data-i18n="role_user">Utilisateur</option>
+            </select>
+            <select id="perPage">
+              <option value="10">10</option>
+              <option value="25">25</option>
+              <option value="50">50</option>
+            </select>
+          </div>
+
+          <table class="table" id="usersTable">
+            <thead>
+              <tr>
+                <th data-sort="name" data-i18n="label_name">Nom</th>
+                <th data-sort="email" data-i18n="label_email">Email</th>
+                <th data-sort="role" data-i18n="label_role">Rôle</th>
+                <th data-i18n="btn_view">Actions</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+
+          <div class="pagination" id="pagination"></div>
+        </div>
+
+        <!-- Modal / Form -->
+        <div id="modal" class="modal hidden">
+          <div class="modal-content card">
+            <h3 id="modalTitle" data-i18n="add_user">Ajouter utilisateur</h3>
+            <form id="userForm">
+              <input type="hidden" id="userId" />
+              <label data-i18n="label_name">Nom</label>
+              <input id="u_name" required />
+              <small class="error"></small>
+              <label data-i18n="label_email">Email</label>
+              <input id="u_email" type="email" required />
+              <small class="error"></small>
+              <label data-i18n="label_password">Mot de passe</label>
+              <input id="u_password" type="password" minlength="3" />
+              <small class="error"></small>
+              <label data-i18n="label_role">Rôle</label>
+              <select id="u_role" required>
+                <option value="user" data-i18n="role_user">Utilisateur</option>
+                <option value="admin" data-i18n="role_admin">Admin</option>
+              </select>
+              <div class="row end">
+                <button type="submit" class="btn primary" data-i18n="btn_save">Enregistrer</button>
+                <button type="button" class="btn" id="cancelModal" data-i18n="btn_cancel">Annuler</button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+      </main>
+    </div>
+  </div>
+
+  <script src="js/data.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/i18n.js"></script>
+  <script src="js/users.js"></script>
+  <script>
+    requireAuth();
+    initApp();
+    const session = getSession();
+    document.getElementById('username').textContent = session.name + " (" + session.role + ")";
+    document.getElementById('logoutBtn').addEventListener('click', logout);
+
+    const sel = document.getElementById('langSelectTop');
+    sel.value = localStorage.getItem('ecom_lang') || 'fr';
+    sel.addEventListener('change', e => {
+      loadLang(e.target.value).then(() => {
+        initUsersPage();
+        initTheme();
+      });
+    });
+
+    loadLang(localStorage.getItem('ecom_lang') || 'fr').then(() => {
+      initUsersPage();
+      initTheme();
+    });
+  </script>
+
+</body>
+</html>

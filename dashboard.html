@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Dashboard - E-commerce</title>
+  <link rel="stylesheet" href="css/styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body>
+  <div id="app" class="app">
+    <!-- NAV -->
+    <header class="nav">
+      <div class="nav-left">
+        <h2 class="logo">E-Shop</h2>
+      </div>
+      <div class="nav-right">
+        <span id="username"></span>
+        <select id="langSelectTop">
+          <option value="fr">FR</option><option value="en">EN</option><option value="ar">AR</option>
+        </select>
+        <button id="themeToggle" class="btn">Dark Mode</button>
+        <button id="logoutBtn" class="btn">Déconnexion</button>
+      </div>
+    </header>
+
+    <!-- SIDEBAR + MAIN -->
+    <div class="layout">
+      <aside class="sidebar">
+        <nav>
+          <a href="dashboard.html" class="active" data-i18n="nav_dashboard">Tableau de bord</a>
+          <a href="products.html" data-i18n="nav_products">Produits</a>
+          <a href="categories.html" data-i18n="nav_categories">Catégories</a>
+          <a href="orders.html" data-i18n="nav_orders">Commandes</a>
+          <a href="users.html" data-i18n="nav_users">Utilisateurs</a>
+          <a href="reviews.html" data-i18n="nav_reviews">Avis</a>
+        </nav>
+      </aside>
+
+      <main class="main">
+        <section class="dashboard-filters">
+          <div class="filters">
+            <label data-i18n="filter_period">Période:</label>
+            <select id="periodFilter">
+              <option value="all" data-i18n="label_all">Tout</option>
+              <option value="day" data-i18n="filter_day">Jour</option>
+              <option value="week" data-i18n="filter_week">Semaine</option>
+              <option value="month" data-i18n="filter_month">Mois</option>
+              <option value="year" data-i18n="filter_year">Année</option>
+            </select>
+            <label data-i18n="label_category">Catégorie:</label>
+            <select id="categoryFilter">
+              <option value="all" data-i18n="label_all_categories">Toutes catégories</option>
+            </select>
+          </div>
+        </section>
+
+        <section class="kpis" id="kpis">
+          <!-- KPI cards go here -->
+        </section>
+
+        <section class="charts">
+          <div class="chart-card"><h3 data-i18n="chart_products_by_cat">Produits par catégorie</h3><canvas id="chart1"></canvas></div>
+          <div class="chart-card"><h3 data-i18n="chart_orders_status">Commandes par statut</h3><canvas id="chart2"></canvas></div>
+          <div class="chart-card"><h3 data-i18n="chart_sales_by_month">Ventes par mois</h3><canvas id="chart3"></canvas></div>
+          <div class="chart-card"><h3 data-i18n="chart_revenue_line">CA (ligne)</h3><canvas id="chart4"></canvas></div>
+          <div class="chart-card"><h3 data-i18n="chart_ratings">Avis (scatter)</h3><canvas id="chart5"></canvas></div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <script src="js/data.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/i18n.js"></script>
+  <script src="js/dashboard.js"></script>
+  <script>
+    requireAuth();
+    initApp();
+    const session = getSession();
+    document.getElementById('username').textContent = session.name + " (" + session.role + ")";
+    document.getElementById('logoutBtn').addEventListener('click', logout);
+    document.getElementById('logoutBtn').setAttribute('data-i18n', 'btn_logout');
+
+    const sel = document.getElementById('langSelectTop');
+    sel.value = localStorage.getItem('ecom_lang') || 'fr';
+    sel.addEventListener('change', e => {
+      loadLang(e.target.value).then(() => {
+        renderDashboard();
+        initTheme();
+      });
+    });
+
+    // Populate category filter
+    const catFilter = document.getElementById('categoryFilter');
+    getAll('categories').forEach(cat => {
+      const opt = document.createElement('option');
+      opt.value = cat.id;
+      opt.textContent = cat.name;
+      catFilter.appendChild(opt);
+    });
+
+    // Add filter listeners
+    document.getElementById('periodFilter').addEventListener('change', renderDashboard);
+    document.getElementById('categoryFilter').addEventListener('change', renderDashboard);
+
+    loadLang(localStorage.getItem('ecom_lang') || 'fr').then(() => {
+      renderDashboard();
+      initTheme();
+    });
+  </script>
+
+</body>
+</html>

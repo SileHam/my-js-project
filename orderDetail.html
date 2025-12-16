@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Détails Commande - E-shop</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.3/html2pdf.bundle.min.js"></script>
+</head>
+<body>
+  <div class="app">
+    <header class="nav">
+      <div class="nav-left"><h2 class="logo">E-Shop</h2></div>
+      <div class="nav-right">
+        <span id="username"></span>
+        <select id="langSelectTop">
+          <option value="fr">FR</option>
+          <option value="en">EN</option>
+          <option value="ar">AR</option>
+        </select>
+        <button id="themeToggle" class="btn">Dark Mode</button>
+        <button id="logoutBtn" class="btn" data-i18n="btn_logout">Déconnexion</button>
+      </div>
+    </header>
+
+    <div class="layout">
+      <aside class="sidebar">
+        <nav>
+          <a href="dashboard.html" data-i18n="nav_dashboard">Tableau de bord</a>
+          <a href="products.html" data-i18n="nav_products">Produits</a>
+          <a href="categories.html" data-i18n="nav_categories">Catégories</a>
+          <a href="orders.html" data-i18n="nav_orders">Commandes</a>
+          <a href="users.html" data-i18n="nav_users">Utilisateurs</a>
+          <a href="reviews.html" data-i18n="nav_reviews">Avis</a>
+        </nav>
+      </aside>
+
+      <main class="main">
+        <div class="card" id="orderCard">
+          <div class="row between">
+            <h2 data-i18n="title_order_detail">Détails de la commande #<span id="od_id"></span></h2>
+            <div>
+              <button id="exportPdfBtn" class="btn" data-i18n="btn_export_pdf">Export PDF</button>
+              <a id="editLink" class="btn" data-i18n="btn_edit">Modifier</a>
+              <a href="orders.html" class="btn" data-i18n="btn_back">Retour</a>
+              <button id="delBtn" class="btn danger" data-i18n="btn_delete">Supprimer</button>
+            </div>
+          </div>
+          <div style="margin-top:20px;">
+            <ul style="list-style:none;padding:0;">
+              <li style="padding:8px 0;border-bottom:1px solid var(--border);"><strong data-i18n="label_user">Utilisateur:</strong> <span id="od_user"></span></li>
+              <li style="padding:8px 0;border-bottom:1px solid var(--border);"><strong data-i18n="label_status">Statut:</strong> <span id="od_status"></span></li>
+              <li style="padding:8px 0;border-bottom:1px solid var(--border);"><strong data-i18n="label_date">Date:</strong> <span id="od_date"></span></li>
+              <li style="padding:8px 0;border-bottom:1px solid var(--border);"><strong data-i18n="label_total">Total:</strong> <span id="od_total"></span></li>
+              <li style="padding:8px 0;"><strong>Articles:</strong> <ul id="od_items" style="margin-top:8px;"></ul></li>
+            </ul>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script src="js/data.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/i18n.js"></script>
+  <script>
+    requireAuth();
+    initApp();
+    const session = getSession();
+    document.getElementById('username').textContent = session.name + " (" + session.role + ")";
+    document.getElementById('logoutBtn').addEventListener('click', logout);
+
+    const sel = document.getElementById('langSelectTop');
+    sel.value = localStorage.getItem('ecom_lang') || 'fr';
+    sel.addEventListener('change', e => {
+      loadLang(e.target.value).then(() => {
+        initTheme();
+        renderOrder();
+      });
+    });
+
+    function renderOrder() {
+      const params = new URLSearchParams(location.search);
+      const id = Number(params.get('id'));
+      const o = getAll('orders').find(x => x.id === id);
+      if (!o) {
+        document.getElementById('orderCard').innerHTML = `<p>${t('msg_order_not_found')}</p>`;
+      } else {
+        document.getElementById('od_id').textContent = o.id;
+        const user = getAll('users').find(u => u.id === o.userId);
+        document.getElementById('od_user').textContent = user ? user.name : '—';
+        document.getElementById('od_status').innerHTML = `<span class="status-badge status-${o.status}">${t(`status_${o.status}`)}</span>`;
+        document.getElementById('od_date').textContent = formatDate(o.date);
+        document.getElementById('od_total').textContent = formatCurrency(o.total);
+        const itemsList = document.getElementById('od_items');
+        itemsList.innerHTML = '';
+        (o.items || []).forEach(item => {
+          const product = getAll('products').find(p => p.id === item.productId);
+          const li = document.createElement('li');
+          li.style.padding = '4px 0';
+          li.textContent = `${product ? product.title : '—'} x${item.qty} - ${formatCurrency(item.price * item.qty)}`;
+          itemsList.appendChild(li);
+        });
+        document.getElementById('exportPdfBtn').addEventListener('click', () => {
+          html2pdf().from(document.getElementById('orderCard')).save(`Commande-${o.id}.pdf`);
+        });
+        document.getElementById('editLink').href = `orders.html?edit=${o.id}`;
+        document.getElementById('delBtn').addEventListener('click', () => {
+          Swal.fire({
+            title: t('msg_confirm_delete'),
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: t('btn_confirm'),
+            cancelButtonText: t('btn_cancel')
+          }).then((result) => {
+            if (result.isConfirmed) {
+              remove('orders', o.id);
+              Swal.fire({
+                icon: 'success',
+                title: t('msg_delete_success'),
+                timer: 1500,
+                showConfirmButton: false
+              }).then(() => {
+                location.href = 'orders.html';
+              });
+            }
+          });
+        });
+      }
+    }
+
+    loadLang(localStorage.getItem('ecom_lang') || 'fr').then(() => {
+      renderOrder();
+      initTheme();
+    });
+  </script>
+
+</body>
+</html>
+

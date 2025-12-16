@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Détails Avis - E-shop</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.3/html2pdf.bundle.min.js"></script>
+</head>
+<body>
+  <div class="app">
+    <header class="nav">
+      <div class="nav-left"><h2 class="logo">E-Shop</h2></div>
+      <div class="nav-right">
+        <span id="username"></span>
+        <select id="langSelectTop">
+          <option value="fr">FR</option>
+          <option value="en">EN</option>
+          <option value="ar">AR</option>
+        </select>
+        <button id="themeToggle" class="btn">Dark Mode</button>
+        <button id="logoutBtn" class="btn" data-i18n="btn_logout">Déconnexion</button>
+      </div>
+    </header>
+
+    <div class="layout">
+      <aside class="sidebar">
+        <nav>
+          <a href="dashboard.html" data-i18n="nav_dashboard">Tableau de bord</a>
+          <a href="products.html" data-i18n="nav_products">Produits</a>
+          <a href="categories.html" data-i18n="nav_categories">Catégories</a>
+          <a href="orders.html" data-i18n="nav_orders">Commandes</a>
+          <a href="users.html" data-i18n="nav_users">Utilisateurs</a>
+          <a href="reviews.html" data-i18n="nav_reviews">Avis</a>
+        </nav>
+      </aside>
+
+      <main class="main">
+        <div class="card" id="reviewCard">
+          <div class="row between">
+            <h2 data-i18n="title_review_detail">Détails de l'avis</h2>
+            <div>
+              <button id="exportPdfBtn" class="btn" data-i18n="btn_export_pdf">Export PDF</button>
+              <a id="editLink" class="btn" data-i18n="btn_edit">Modifier</a>
+              <a href="reviews.html" class="btn" data-i18n="btn_back">Retour</a>
+              <button id="delBtn" class="btn danger" data-i18n="btn_delete">Supprimer</button>
+            </div>
+          </div>
+          <div style="margin-top:20px;">
+            <ul style="list-style:none;padding:0;">
+              <li style="padding:8px 0;border-bottom:1px solid var(--border);"><strong data-i18n="label_product">Produit:</strong> <span id="rd_product"></span></li>
+              <li style="padding:8px 0;border-bottom:1px solid var(--border);"><strong data-i18n="label_user">Utilisateur:</strong> <span id="rd_user"></span></li>
+              <li style="padding:8px 0;border-bottom:1px solid var(--border);"><strong data-i18n="label_rating">Note:</strong> <span id="rd_rating"></span></li>
+              <li style="padding:8px 0;border-bottom:1px solid var(--border);"><strong data-i18n="label_date">Date:</strong> <span id="rd_date"></span></li>
+              <li style="padding:8px 0;"><strong data-i18n="label_comment">Commentaire:</strong> <p id="rd_comment" style="margin-top:8px;"></p></li>
+            </ul>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script src="js/data.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/i18n.js"></script>
+  <script>
+    requireAuth();
+    initApp();
+    const session = getSession();
+    document.getElementById('username').textContent = session.name + " (" + session.role + ")";
+    document.getElementById('logoutBtn').addEventListener('click', logout);
+
+    const sel = document.getElementById('langSelectTop');
+    sel.value = localStorage.getItem('ecom_lang') || 'fr';
+    sel.addEventListener('change', e => {
+      loadLang(e.target.value).then(() => {
+        initTheme();
+        renderReview();
+      });
+    });
+
+    function renderReview() {
+      const params = new URLSearchParams(location.search);
+      const id = Number(params.get('id'));
+      const r = getAll('reviews').find(x => x.id === id);
+      if (!r) {
+        document.getElementById('reviewCard').innerHTML = `<p>${t('msg_review_not_found')}</p>`;
+      } else {
+        const product = getAll('products').find(p => p.id === r.productId);
+        const user = getAll('users').find(u => u.id === r.userId);
+        document.getElementById('rd_product').textContent = product ? product.title : '—';
+        document.getElementById('rd_user').textContent = user ? user.name : '—';
+        document.getElementById('rd_rating').textContent = '★'.repeat(Math.floor(r.rating)) + '☆'.repeat(5 - Math.floor(r.rating)) + ` (${r.rating}/5)`;
+        document.getElementById('rd_date').textContent = formatDate(r.date);
+        document.getElementById('rd_comment').textContent = r.comment || '—';
+        document.getElementById('exportPdfBtn').addEventListener('click', () => {
+          html2pdf().from(document.getElementById('reviewCard')).save(`Avis-${r.id}.pdf`);
+        });
+        document.getElementById('editLink').href = `reviews.html?edit=${r.id}`;
+        document.getElementById('delBtn').addEventListener('click', () => {
+          Swal.fire({
+            title: t('msg_confirm_delete'),
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: t('btn_confirm'),
+            cancelButtonText: t('btn_cancel')
+          }).then((result) => {
+            if (result.isConfirmed) {
+              remove('reviews', r.id);
+              Swal.fire({
+                icon: 'success',
+                title: t('msg_delete_success'),
+                timer: 1500,
+                showConfirmButton: false
+              }).then(() => {
+                location.href = 'reviews.html';
+              });
+            }
+          });
+        });
+      }
+    }
+
+    loadLang(localStorage.getItem('ecom_lang') || 'fr').then(() => {
+      renderReview();
+      initTheme();
+    });
+  </script>
+
+</body>
+</html>
+

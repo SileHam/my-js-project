@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Détails Produit - E-shop</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.3/html2pdf.bundle.min.js"></script>
+</head>
+<body>
+  <div class="app">
+    <header class="nav">
+      <div class="nav-left"><h2 class="logo">E-Shop</h2></div>
+      <div class="nav-right">
+        <span id="username"></span>
+        <select id="langSelectTop">
+          <option value="fr">FR</option>
+          <option value="en">EN</option>
+          <option value="ar">AR</option>
+        </select>
+        <button id="themeToggle" class="btn">Dark Mode</button>
+        <button id="logoutBtn" class="btn" data-i18n="btn_logout">Déconnexion</button>
+      </div>
+    </header>
+
+    <div class="layout">
+      <aside class="sidebar">
+        <nav>
+          <a href="dashboard.html" data-i18n="nav_dashboard">Tableau de bord</a>
+          <a href="products.html" data-i18n="nav_products">Produits</a>
+          <a href="categories.html" data-i18n="nav_categories">Catégories</a>
+          <a href="orders.html" data-i18n="nav_orders">Commandes</a>
+          <a href="users.html" data-i18n="nav_users">Utilisateurs</a>
+          <a href="reviews.html" data-i18n="nav_reviews">Avis</a>
+        </nav>
+      </aside>
+
+      <main class="main">
+        <div class="card" id="productCard">
+          <div class="row between">
+            <h2 id="pd_title" data-i18n="title_product_detail">Détails du produit</h2>
+            <div>
+              <button id="exportPdfBtn" class="btn" data-i18n="btn_export_pdf">Export PDF</button>
+              <a id="editLink" class="btn" data-i18n="btn_edit">Modifier</a>
+              <a href="products.html" class="btn" data-i18n="btn_back">Retour</a>
+              <button id="delBtn" class="btn danger" data-i18n="btn_delete">Supprimer</button>
+            </div>
+          </div>
+          <div style="margin-top:20px;">
+            <p id="pd_desc" style="margin-bottom:16px;"></p>
+            <ul style="list-style:none;padding:0;">
+              <li style="padding:8px 0;border-bottom:1px solid var(--border);"><strong data-i18n="label_price">Prix:</strong> <span id="pd_price"></span></li>
+              <li style="padding:8px 0;border-bottom:1px solid var(--border);"><strong data-i18n="label_quantity">Quantité:</strong> <span id="pd_qty"></span></li>
+              <li style="padding:8px 0;border-bottom:1px solid var(--border);"><strong data-i18n="label_category">Catégorie:</strong> <span id="pd_cat"></span></li>
+              <li style="padding:8px 0;border-bottom:1px solid var(--border);"><strong data-i18n="label_sku">SKU:</strong> <span id="pd_sku"></span></li>
+              <li style="padding:8px 0;"><strong data-i18n="label_rating">Note:</strong> <span id="pd_rating"></span></li>
+            </ul>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script src="js/data.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/i18n.js"></script>
+  <script>
+    requireAuth();
+    initApp();
+    const session = getSession();
+    document.getElementById('username').textContent = session.name + " (" + session.role + ")";
+    document.getElementById('logoutBtn').addEventListener('click', logout);
+
+    const sel = document.getElementById('langSelectTop');
+    sel.value = localStorage.getItem('ecom_lang') || 'fr';
+    sel.addEventListener('change', e => {
+      loadLang(e.target.value).then(() => {
+        initTheme();
+        renderProduct();
+      });
+    });
+
+    function renderProduct() {
+      const params = new URLSearchParams(location.search);
+      const id = Number(params.get('id'));
+      const p = getAll('products').find(x => x.id === id);
+      if (!p) {
+        document.getElementById('productCard').innerHTML = `<p>${t('msg_product_not_found')}</p>`;
+      } else {
+        document.getElementById('pd_title').textContent = p.title;
+        document.getElementById('pd_desc').textContent = p.description || '—';
+        document.getElementById('pd_price').textContent = formatCurrency(p.price);
+        document.getElementById('pd_qty').textContent = p.qty;
+        const cat = getAll('categories').find(c => c.id === p.categoryId);
+        document.getElementById('pd_cat').textContent = cat ? cat.name : '—';
+        document.getElementById('pd_sku').textContent = p.sku;
+        document.getElementById('pd_rating').textContent = (p.rating || 0).toFixed(1) + '/5';
+        document.getElementById('exportPdfBtn').addEventListener('click', () => {
+          html2pdf().from(document.getElementById('productCard')).save(`${p.title}.pdf`);
+        });
+        document.getElementById('editLink').href = `products.html?edit=${p.id}`;
+        document.getElementById('delBtn').addEventListener('click', () => {
+          Swal.fire({
+            title: t('msg_confirm_delete'),
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: t('btn_confirm'),
+            cancelButtonText: t('btn_cancel')
+          }).then((result) => {
+            if (result.isConfirmed) {
+              remove('products', p.id);
+              Swal.fire({
+                icon: 'success',
+                title: t('msg_delete_success'),
+                timer: 1500,
+                showConfirmButton: false
+              }).then(() => {
+                location.href = 'products.html';
+              });
+            }
+          });
+        });
+      }
+    }
+
+    loadLang(localStorage.getItem('ecom_lang') || 'fr').then(() => {
+      renderProduct();
+      initTheme();
+    });
+  </script>
+
+</body>
+</html>

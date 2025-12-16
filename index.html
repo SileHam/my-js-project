@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>E-commerce - Login</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body>
+  <div class="theme-container" style="text-align:right; padding:15px;">
+    <select id="langSelectTop">
+      <option value="fr">FR</option>
+      <option value="en">EN</option>
+      <option value="ar">AR</option>
+    </select>
+    <button id="themeToggle" class="btn">Dark Mode</button>
+  </div>
+
+  <main class="centered">
+    <div class="card login-card">
+      <h1 data-i18n="login_title">Connexion</h1>
+
+      <form id="loginForm" novalidate>
+        <label data-i18n="login_email">Email</label>
+        <input id="email" type="email" required />
+        <small class="error" id="err-email"></small>
+
+        <label data-i18n="login_password">Mot de passe</label>
+        <input id="password" type="password" required minlength="3" />
+        <small class="error" id="err-pass"></small>
+
+        <div class="row">
+          <button type="submit" class="btn primary" data-i18n="btn_login">Se connecter</button>
+        </div>
+
+        <div id="error" class="error"></div>
+      </form>
+
+      <p class="muted">Utilisateurs par défaut : admin@app.com / admin123 — user@app.com / user123</p>
+    </div>
+  </main>
+
+  <script src="js/data.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/i18n.js"></script>
+
+  <script>
+    initApp();
+
+    const select = document.getElementById('langSelectTop');
+    const current = localStorage.getItem('ecom_lang') || 'fr';
+    select.value = current;
+    loadLang(current).then(() => {
+      initTheme();
+    });
+
+    select.addEventListener('change', e => {
+      loadLang(e.target.value).then(() => {
+        initTheme();
+      });
+    });
+
+    // Real-time validation
+    document.getElementById('email').addEventListener('blur', function() {
+      const email = this.value.trim();
+      if (!email) {
+        document.getElementById('err-email').textContent = t('msg_required');
+      } else if (!validateEmail(email)) {
+        document.getElementById('err-email').textContent = t('msg_invalid_email');
+      } else {
+        document.getElementById('err-email').textContent = '';
+      }
+    });
+
+    document.getElementById('password').addEventListener('blur', function() {
+      const password = this.value.trim();
+      if (!password) {
+        document.getElementById('err-pass').textContent = t('msg_required');
+      } else if (password.length < 3) {
+        document.getElementById('err-pass').textContent = t('msg_invalid_password');
+      } else {
+        document.getElementById('err-pass').textContent = '';
+      }
+    });
+
+    // LOGIN HANDLING
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      document.getElementById('error').textContent = '';
+      document.getElementById('err-email').textContent = '';
+      document.getElementById('err-pass').textContent = '';
+
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value.trim();
+
+      if (!email) {
+        document.getElementById('err-email').textContent = t('msg_required');
+        return;
+      }
+      if (!validateEmail(email)) {
+        document.getElementById('err-email').textContent = t('msg_invalid_email');
+        return;
+      }
+      if (!password) {
+        document.getElementById('err-pass').textContent = t('msg_required');
+        return;
+      }
+      if (password.length < 3) {
+        document.getElementById('err-pass').textContent = t('msg_invalid_password');
+        return;
+      }
+
+      const res = login(email, password);
+
+      if (res.ok) {
+        Swal.fire({
+          icon: 'success',
+          title: 'Connexion réussie',
+          timer: 1000,
+          showConfirmButton: false
+        }).then(() => {
+          window.location.href = 'dashboard.html';
+        });
+      } else {
+        document.getElementById('error').textContent = t('msg_login_error');
+      }
+    });
+  </script>
+
+</body>
+</html>
